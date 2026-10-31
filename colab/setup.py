@@ -54,30 +54,30 @@ def install_video2x(dest: Path = Path("/content")):
     if r.returncode != 0:
         raise RuntimeError("Video2X failed to start. Check Vulkan setup.")
 
-    # vulkan ICD setup - create wrapper script that sets env vars
+    # vulkan ICD setup
     import glob
     os.makedirs("/usr/share/vulkan/icd.d", exist_ok=True)
-    glx_libs = glob.glob("/usr/lib/x86_64-linux-gnu/libGLX_nvidia*.so*")
+    glx_libs = glob.glob("/usr/lib64-nvidia/libGLX_nvidia*.so*")
     print("GLX libs:", glx_libs)
     if glx_libs:
         versioned = sorted(glx_libs)[-1]
-        unversioned = "/usr/lib/x86_64-linux-gnu/libGLX_nvidia.so.0"
+        unversioned = "/usr/lib64-nvidia/libGLX_nvidia.so.0"
         if not os.path.exists(unversioned):
             os.symlink(versioned, unversioned)
             print(f"Created symlink {unversioned} -> {versioned}")
     icd = Path("/usr/share/vulkan/icd.d/nvidia_icd.json")
-    icd.write_text('{"file_format_version":"1.0.0","ICD":{"library_path":"libGLX_nvidia.so.0","api_version":"1.3.242"}}')
+    icd.write_text('{"file_format_version":"1.0.0","ICD":{"library_path":"/usr/lib64-nvidia/libGLX_nvidia.so.0","api_version":"1.3.242"}}')
+    os.environ["VK_ICD_FILENAMES"] = str(icd)
+    os.environ["LD_LIBRARY_PATH"] = "/usr/lib64-nvidia:/content/squashfs-root/usr/lib:" + os.environ.get("LD_LIBRARY_PATH", "")
 
-    # create wrapper script instead of direct symlink to AppRun
+    # wrapper to AppRun
+    apprun = squash / "AppRun"
     wrapper = Path("/usr/local/bin/video2x")
-    actual = "/content/squashfs-root/usr/bin/video2x"
-    wrapper.write_text(f'''#!/bin/bash
-export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/nvidia_icd.json
-export LD_LIBRARY_PATH=/content/squashfs-root/usr/lib:/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
-exec "{actual}" "$@"
-''')
-    wrapper.chmod(0o755)
-    print("Created video2x wrapper")
+    if wrapper.exists() or wrapper.is_symlink():
+        wrapper.unlink()
+    if apprun.exists():
+        run(["ln", "-sf", str(apprun), str(wrapper)])
+        print("Symlinked video2x -> AppRun")
 
     r2 = subprocess.run(["video2x", "--list-devices"], capture_output=True, text=True)
     print("Vulkan:", r2.stdout.strip()[:200] if r2.stdout.strip() else r2.stderr.strip()[:200])
