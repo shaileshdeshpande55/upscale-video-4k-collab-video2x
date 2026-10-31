@@ -78,10 +78,14 @@ def install_video2x(dest: Path = Path("/content")):
 
 
 def clone_repo(repo_url: str, dest: Path = Path("/content/app")):
+    # if stale (missing backend), force re-clone
+    if dest.exists() and not (dest / "backend" / "requirements.txt").exists():
+        print("Stale repo detected, re-cloning...")
+        import shutil
+        shutil.rmtree(dest, ignore_errors=True)
     if not dest.exists():
         run(["git", "clone", repo_url, str(dest)])
     else:
-        # pull latest
         run(["git", "-C", str(dest), "fetch", "--all"], check=False)
         run(["git", "-C", str(dest), "reset", "--hard", "origin/main"], check=False)
         print(f"Repo updated at {dest}")

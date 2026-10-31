@@ -32,6 +32,17 @@ def main():
 
     application = create_app(settings, job_manager_factory=factory)
 
+    import os as _os
+    # clear any stale ngrok config
+    ngrok_cfg = _os.path.expanduser("~/.config/ngrok/ngrok.yml")
+    if _os.path.exists(ngrok_cfg):
+        _os.remove(ngrok_cfg)
+
+    # vulkan ICD fallback
+    icd = _os.path.join("/usr/share/vulkan/icd.d/nvidia_icd.json")
+    if _os.path.exists(icd):
+        _os.environ["VK_ICD_FILENAMES"] = icd
+
     ngrok.set_auth_token(token)
 
     # start uvicorn in a thread
