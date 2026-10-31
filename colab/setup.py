@@ -54,21 +54,21 @@ def install_video2x(dest: Path = Path("/content")):
     if r.returncode != 0:
         raise RuntimeError("Video2X failed to start. Check Vulkan setup.")
 
-    # vulkan ICD setup
-    import glob
+    # vulkan ICD setup - use EGL library
+    import json
     os.makedirs("/usr/share/vulkan/icd.d", exist_ok=True)
-    glx_libs = glob.glob("/usr/lib64-nvidia/libGLX_nvidia*.so*")
-    print("GLX libs:", glx_libs)
-    if glx_libs:
-        versioned = sorted(glx_libs)[-1]
-        unversioned = "/usr/lib64-nvidia/libGLX_nvidia.so.0"
-        if not os.path.exists(unversioned):
-            os.symlink(versioned, unversioned)
-            print(f"Created symlink {unversioned} -> {versioned}")
-    icd = Path("/usr/share/vulkan/icd.d/nvidia_icd.json")
-    icd.write_text('{"file_format_version":"1.0.0","ICD":{"library_path":"/usr/lib64-nvidia/libGLX_nvidia.so.0","api_version":"1.3.242"}}')
-    os.environ["VK_ICD_FILENAMES"] = str(icd)
-    os.environ["LD_LIBRARY_PATH"] = "/usr/lib64-nvidia:/content/squashfs-root/usr/lib:" + os.environ.get("LD_LIBRARY_PATH", "")
+    egl_lib = "/usr/lib64-nvidia/libEGL_nvidia.so.0"
+    assert os.path.exists(egl_lib), "NVIDIA EGL library missing"
+    icd_path = "/usr/share/vulkan/icd.d/nvidia_icd.json"
+    Path(icd_path).write_text(json.dumps({
+        "file_format_version": "1.0.0",
+        "ICD": {
+            "library_path": egl_lib,
+            "api_version": "1.3.242"
+        }
+    }, indent=2))
+    os.environ["LD_LIBRARY_PATH"] = "/usr/lib64-nvidia:" + os.environ.get("LD_LIBRARY_PATH", "")
+    os.environ["VK_ICD_FILENAMES"] = icd_path
 
     # wrapper to AppRun
     apprun = squash / "AppRun"

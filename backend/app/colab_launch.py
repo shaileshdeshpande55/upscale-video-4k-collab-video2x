@@ -41,26 +41,22 @@ def main():
     if _os.path.exists(ngrok_cfg):
         _os.remove(ngrok_cfg)
 
-    # vulkan ICD setup - nvidia libs are in /usr/lib64-nvidia/
-    import glob
-    glx_libs = glob.glob("/usr/lib64-nvidia/libGLX_nvidia*.so*")
-    if glx_libs:
-        versioned = sorted(glx_libs)[-1]
-        unversioned = "/usr/lib64-nvidia/libGLX_nvidia.so.0"
-        if not _os.path.exists(unversioned):
-            try:
-                _os.symlink(versioned, unversioned)
-                print(f"symlinked {unversioned} -> {versioned}")
-            except Exception as e:
-                print(f"symlink failed: {e}")
-
-    _os.makedirs("/usr/share/vulkan/icd.d", exist_ok=True)
+    # vulkan ICD setup - use EGL library
+    import json
+    egl_lib = "/usr/lib64-nvidia/libEGL_nvidia.so.0"
+    assert _os.path.exists(egl_lib), "NVIDIA EGL library missing"
     icd_path = "/usr/share/vulkan/icd.d/nvidia_icd.json"
+    _os.makedirs("/usr/share/vulkan/icd.d", exist_ok=True)
     with open(icd_path, "w") as f:
-        f.write('{"file_format_version":"1.0.0","ICD":{"library_path":"/usr/lib64-nvidia/libGLX_nvidia.so.0","api_version":"1.3.242"}}')
-
+        json.dump({
+            "file_format_version": "1.0.0",
+            "ICD": {
+                "library_path": egl_lib,
+                "api_version": "1.3.242"
+            }
+        }, f, indent=2)
+    _os.environ["LD_LIBRARY_PATH"] = "/usr/lib64-nvidia:" + _os.environ.get("LD_LIBRARY_PATH", "")
     _os.environ["VK_ICD_FILENAMES"] = icd_path
-    _os.environ["LD_LIBRARY_PATH"] = "/usr/lib64-nvidia:/content/squashfs-root/usr/lib:" + _os.environ.get("LD_LIBRARY_PATH", "")
 
     r = subprocess.run(["video2x", "--list-devices"], capture_output=True, text=True)
     print("Vulkan:", r.stdout.strip()[:200] if r.stdout.strip() else r.stderr.strip()[:200])
