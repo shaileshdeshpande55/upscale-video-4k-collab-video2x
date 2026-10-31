@@ -1,0 +1,47 @@
+# Worktrees
+.worktrees/
+worktrees/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+frontend/dist/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Media
+*.mp4
+*.mkv
+*.mov
+*.webm
+*.avi
+
+# Data
+data/
+input/
+output/
+failed/
+processing/
+state.json
+*.part
+
+# OS
+Thumbs.db
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
