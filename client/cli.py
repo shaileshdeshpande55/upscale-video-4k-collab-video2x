@@ -40,7 +40,7 @@ async def async_main(settings: Settings) -> None:
         while True:
             files = scan_input(settings.input_dir)
             state_path = settings.state_file
-            from .watcher import load_state
+            from watcher import load_state
             state = load_state(state_path)
             files = filter_completed(files, state)
             if not files:
