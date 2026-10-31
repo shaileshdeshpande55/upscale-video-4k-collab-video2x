@@ -21,6 +21,8 @@ frontend/dist/
 .env
 .env.*
 !.env.example
+backend_url.txt
+backend_token.txt
 
 # Media
 *.mp4
