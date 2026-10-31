@@ -56,11 +56,28 @@ def install_video2x(dest: Path = Path("/content")):
     r2 = subprocess.run(["video2x", "--list-devices"], capture_output=True, text=True)
     if r2.returncode != 0 or "NVIDIA" not in r2.stdout:
         print("GPU not visible to Vulkan. Trying ICD fallback...")
+        # diagnostic
+        icd_dir = Path("/usr/share/vulkan/icd.d")
+        if icd_dir.exists():
+            for f in icd_dir.iterdir():
+                print(f"  ICD file: {f}")
+                print(f"  content: {f.read_text()}")
+        # find nvidia vulkan lib
+        import glob
+        libs = glob.glob("/usr/lib/x86_64-linux-gnu/libGLX_nvidia*.so*") + glob.glob("/usr/lib/x86_64-linux-gnu/libnvidia-glcore*.so*")
+        print(f"  nvidia libs: {libs}")
         icd = Path("/usr/share/vulkan/icd.d/nvidia_icd.json")
-        if not icd.exists():
-            icd.parent.mkdir(parents=True, exist_ok=True)
-            icd.write_text('{"file_format_version":"1.0.0","ICD":{"library_path":"libGLX_nvidia.so.0","api_version":"1.3.242"}}')
-        os.environ["VK_ICD_FILENAMES"] = str(icd)
+        icd.parent.mkdir(parents=True, exist_ok=True)
+        # try each available lib
+        for lib in (libs or ["libGLX_nvidia.so.0"]):
+            libname = Path(lib).name if "/" in lib else lib
+            icd.write_text(f'{{"file_format_version":"1.0.0","ICD":{{"library_path":"{libname}","api_version":"1.3.242"}}}}')
+            os.environ["VK_ICD_FILENAMES"] = str(icd)
+            r4 = subprocess.run(["video2x", "--list-devices"], capture_output=True, text=True)
+            if "NVIDIA" in r4.stdout:
+                print(f"  Vulkan OK with {libname}")
+                break
+            print(f"  tried {libname}: {r4.stderr.strip()[:200]}")
         r3 = subprocess.run(["video2x", "--list-devices"], capture_output=True, text=True)
         print(r3.stdout)
         if r3.returncode != 0 or "NVIDIA" not in r3.stdout:
