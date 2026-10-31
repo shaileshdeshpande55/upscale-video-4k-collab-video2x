@@ -41,18 +41,14 @@ def install_video2x(dest: Path = Path("/content")):
     squash = dest / "squashfs-root"
     if not squash.exists():
         run(["bash", "-c", f"cd {dest} && ./Video2X.AppImage --appimage-extract"])
-    # create wrapper script (sets Vulkan env vars)
+    # symlink to AppRun (original approach)
     apprun = squash / "AppRun"
-    actual = squash / "usr" / "bin" / "video2x"
-    if actual.exists():
-        wrapper = Path("/usr/local/bin/video2x")
-        wrapper.write_text(f'''#!/bin/bash
-export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/nvidia_icd.json
-export LD_LIBRARY_PATH=/content/squashfs-root/usr/lib:/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
-exec "{actual}" "$@"
-''')
-        wrapper.chmod(0o755)
-        print("Created video2x wrapper")
+    if apprun.exists():
+        target = Path("/usr/local/bin/video2x")
+        if target.exists() or target.is_symlink():
+            target.unlink()
+        run(["ln", "-sf", str(apprun), str(target)])
+        print("Symlinked video2x -> AppRun")
     # verify
     r = run(["video2x", "--version"], check=False)
     if r.returncode != 0:

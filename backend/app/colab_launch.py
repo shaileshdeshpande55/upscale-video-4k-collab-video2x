@@ -41,28 +41,26 @@ def main():
     if _os.path.exists(ngrok_cfg):
         _os.remove(ngrok_cfg)
 
-    # vulkan: create wrapper script that sets env vars
-    glx_libs = __import__("glob").glob("/usr/lib/x86_64-linux-gnu/libGLX_nvidia*.so*")
+    # vulkan ICD setup
+    import glob
+    glx_libs = glob.glob("/usr/lib/x86_64-linux-gnu/libGLX_nvidia*.so*")
     if glx_libs:
         versioned = sorted(glx_libs)[-1]
         unversioned = "/usr/lib/x86_64-linux-gnu/libGLX_nvidia.so.0"
         if not _os.path.exists(unversioned):
             try:
                 _os.symlink(versioned, unversioned)
-            except Exception:
-                pass
+                print(f"symlinked {unversioned} -> {versioned}")
+            except Exception as e:
+                print(f"symlink failed: {e}")
 
     _os.makedirs("/usr/share/vulkan/icd.d", exist_ok=True)
     icd_path = "/usr/share/vulkan/icd.d/nvidia_icd.json"
     with open(icd_path, "w") as f:
         f.write('{"file_format_version":"1.0.0","ICD":{"library_path":"libGLX_nvidia.so.0","api_version":"1.3.242"}}')
 
-    # create wrapper
-    wrapper = "/usr/local/bin/video2x"
-    actual = "/content/squashfs-root/usr/bin/video2x"
-    with open(wrapper, "w") as f:
-        f.write(f'#!/bin/bash\nexport VK_ICD_FILENAMES={icd_path}\nexport LD_LIBRARY_PATH=/content/squashfs-root/usr/lib:/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH\nexec "{actual}" "$@"\n')
-    _os.chmod(wrapper, 0o755)
+    _os.environ["VK_ICD_FILENAMES"] = icd_path
+    _os.environ["LD_LIBRARY_PATH"] = "/content/squashfs-root/usr/lib:/usr/lib/x86_64-linux-gnu:" + _os.environ.get("LD_LIBRARY_PATH", "")
 
     r = subprocess.run(["video2x", "--list-devices"], capture_output=True, text=True)
     print("Vulkan:", r.stdout.strip()[:200] if r.stdout.strip() else r.stderr.strip()[:200])
