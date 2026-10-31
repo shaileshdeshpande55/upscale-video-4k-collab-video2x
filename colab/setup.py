@@ -50,25 +50,41 @@ def install_video2x(dest: Path = Path("/content")):
     # verify
     r = run(["video2x", "--version"], check=False)
     if r.returncode != 0:
-        # try vulkan ICD fallback
+        raise RuntimeError("Video2X failed to start. Check Vulkan setup.")
+
+    # check GPU visibility
+    r2 = subprocess.run(["video2x", "--list-devices"], capture_output=True, text=True)
+    if r2.returncode != 0 or "NVIDIA" not in r2.stdout:
+        print("GPU not visible to Vulkan. Trying ICD fallback...")
         icd = Path("/usr/share/vulkan/icd.d/nvidia_icd.json")
         if not icd.exists():
             icd.parent.mkdir(parents=True, exist_ok=True)
             icd.write_text('{"file_format_version":"1.0.0","ICD":{"library_path":"libGLX_nvidia.so.0","api_version":"1.3.242"}}')
         os.environ["VK_ICD_FILENAMES"] = str(icd)
-        r = run(["video2x", "--version"], check=False)
-        if r.returncode != 0:
-            raise RuntimeError("Video2X failed to start. Check Vulkan setup.")
-    r2 = run(["video2x", "--list-devices"], check=False)
-    if r2.returncode != 0 or "NVIDIA" not in subprocess.run(["video2x", "--list-devices"], capture_output=True, text=True).stdout:
-        print("WARNING: GPU may not be visible to Vulkan. Check nvidia_icd.json.")
+        r3 = subprocess.run(["video2x", "--list-devices"], capture_output=True, text=True)
+        print(r3.stdout)
+        if r3.returncode != 0 or "NVIDIA" not in r3.stdout:
+            # try alternative ICD path
+            for libname in ["libGLX_nvidia.so.0", "libnvidia-glcore.so.1"]:
+                icd.write_text(f'{{"file_format_version":"1.0.0","ICD":{{"library_path":"{libname}","api_version":"1.3.242"}}}}')
+                r4 = subprocess.run(["video2x", "--list-devices"], capture_output=True, text=True)
+                if "NVIDIA" in r4.stdout:
+                    print(f"Vulkan OK with {libname}")
+                    break
+            else:
+                print("WARNING: Could not get GPU via Vulkan. Check nvidia driver.")
+        else:
+            print("Vulkan OK")
 
 
 def clone_repo(repo_url: str, dest: Path = Path("/content/app")):
     if not dest.exists():
         run(["git", "clone", repo_url, str(dest)])
     else:
-        print(f"Repo already exists at {dest}")
+        # pull latest
+        run(["git", "-C", str(dest), "fetch", "--all"], check=False)
+        run(["git", "-C", str(dest), "reset", "--hard", "origin/main"], check=False)
+        print(f"Repo updated at {dest}")
 
 
 def install_python_deps(repo_dir: Path):
