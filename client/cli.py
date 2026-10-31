@@ -20,9 +20,18 @@ async def async_main(settings: Settings) -> None:
 
     client = ColabClient(settings.url, settings.token)
     try:
-        await client.health()
+        h = await client.health()
+        print(f"Health: {h}")
     except Exception as e:
         print(f"Cannot reach backend: {e}")
+        # try to get more info
+        try:
+            import httpx
+            async with httpx.AsyncClient() as c:
+                r = await c.get(settings.url.rstrip("/") + "/healthz", headers={"ngrok-skip-browser-warning": "1", "User-Agent": "curl"})
+                print(f"Raw response: {r.status_code} {r.text[:300]}")
+        except Exception as e2:
+            print(f"Raw check failed: {e2}")
         await client.close()
         return
 

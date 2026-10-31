@@ -13,14 +13,16 @@ class ColabClient:
     def __init__(self, base_url: str, token: str, timeout: float = 60.0):
         self.base_url = base_url.rstrip("/")
         self.token = token
+        headers = {
+            "ngrok-skip-browser-warning": "1",
+            "User-Agent": "Video2X-CLI/1.0",
+        }
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
         self._client = httpx.AsyncClient(
             base_url=self.base_url,
             timeout=timeout,
-            headers={
-                "Authorization": f"Bearer {token}",
-                "ngrok-skip-browser-warning": "1",
-                "User-Agent": "Video2X-CLI/1.0",
-            },
+            headers=headers,
         )
 
     async def close(self):

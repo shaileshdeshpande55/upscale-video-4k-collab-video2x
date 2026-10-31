@@ -12,7 +12,7 @@ class Settings:
     data_dir: Path = field(default_factory=lambda: Path(os.environ.get("V2X_DATA_DIR", "/content/video2x")))
     video2x_bin: str = field(default_factory=lambda: os.environ.get("V2X_VIDEO2X_BIN", "video2x"))
     api_token: str = field(default_factory=lambda: os.environ.get("API_TOKEN", os.environ.get("V2X_API_TOKEN", "")))
-    allow_insecure: bool = field(default_factory=lambda: os.environ.get("V2X_ALLOW_INSECURE", "").lower() in ("1", "true", "yes"))
+    allow_insecure: bool = field(default_factory=lambda: os.environ.get("V2X_ALLOW_INSECURE", "1").lower() in ("1", "true", "yes"))
     max_upload_bytes: int = field(default_factory=lambda: int(os.environ.get("V2X_MAX_UPLOAD_BYTES", str(4 * 1024 ** 3))))
     max_duration_seconds: int = field(default_factory=lambda: int(os.environ.get("V2X_MAX_DURATION_SECONDS", "600")))
     max_queue_size: int = field(default_factory=lambda: int(os.environ.get("V2X_MAX_QUEUE_SIZE", "3")))
