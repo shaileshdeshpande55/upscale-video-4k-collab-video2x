@@ -19,6 +19,7 @@ class ColabClient:
             headers={
                 "Authorization": f"Bearer {token}",
                 "ngrok-skip-browser-warning": "1",
+                "User-Agent": "Video2X-CLI/1.0",
             },
         )
 
