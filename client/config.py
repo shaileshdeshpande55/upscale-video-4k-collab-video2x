@@ -56,9 +56,25 @@ def parse_args(argv=None) -> Settings:
 
 
 def prompt_if_missing(s: Settings) -> Settings:
+    # try backend_url.txt
+    url_file = Path("backend_url.txt")
+    if not s.url and url_file.exists():
+        s.url = url_file.read_text().strip()
     if not s.url:
         s.url = input("Backend URL (ngrok): ").strip()
+        try:
+            url_file.write_text(s.url)
+        except Exception:
+            pass
     if not s.token:
-        import getpass
-        s.token = getpass.getpass("API token: ").strip()
+        token_file = Path("backend_token.txt")
+        if token_file.exists():
+            s.token = token_file.read_text().strip()
+        else:
+            import getpass
+            s.token = getpass.getpass("API token: ").strip()
+            try:
+                token_file.write_text(s.token)
+            except Exception:
+                pass
     return s
