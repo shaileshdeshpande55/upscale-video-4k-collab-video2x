@@ -35,8 +35,11 @@ async def async_main(settings: Settings) -> None:
         await client.close()
         return
 
-    sysinfo = await client.system()
-    print(f"Connected. GPU: {sysinfo.get('gpu', 'unknown')}")
+    try:
+        sysinfo = await client.system()
+        print(f"Connected. GPU: {sysinfo.get('gpu', 'unknown')}")
+    except Exception as e:
+        print(f"Connected. (system info unavailable: {e})")
 
     settings.input_dir.mkdir(parents=True, exist_ok=True)
     settings.output_dir.mkdir(parents=True, exist_ok=True)
