@@ -5,11 +5,11 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 
-from .config import Settings, parse_args, prompt_if_missing
-from .watcher import scan_input, filter_completed
-from .api import ColabClient
-from .pipeline import Pipeline
-from .ui import PipelineUI
+from config import Settings, parse_args, prompt_if_missing
+from watcher import scan_input, filter_completed
+from api import ColabClient
+from pipeline import Pipeline
+from ui import PipelineUI
 
 
 async def async_main(settings: Settings) -> None:

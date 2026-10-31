@@ -9,8 +9,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-from .api import ColabClient
-from .watcher import load_state, save_state
+from api import ColabClient
+from watcher import load_state, save_state
 
 
 @dataclass
