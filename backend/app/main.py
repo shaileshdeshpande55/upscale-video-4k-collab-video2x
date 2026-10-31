@@ -57,3 +57,7 @@ def create_app(settings: Settings | None = None, job_manager_factory: Callable |
         return JSONResponse(status_code=500, content={"detail": str(exc)})
 
     return app
+
+
+# Module-level app for uvicorn (uses env-based settings)
+app = create_app()

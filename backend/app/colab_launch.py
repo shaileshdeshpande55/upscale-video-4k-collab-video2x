@@ -8,6 +8,7 @@ import time
 import threading
 
 from app.config import load_settings
+from app.main import create_app
 
 
 def main():
@@ -23,10 +24,18 @@ def main():
     import uvicorn
     from pyngrok import ngrok
 
+    from app.db import JobStore
+    from app.jobs import JobManager
+
+    def factory(s):
+        return JobManager(JobStore(s.data_dir / "jobs.db"), s)
+
+    application = create_app(settings, job_manager_factory=factory)
+
     ngrok.set_auth_token(token)
 
     # start uvicorn in a thread
-    config = uvicorn.Config("app.main:app", host="0.0.0.0", port=settings.port, log_level="info")
+    config = uvicorn.Config(application, host="0.0.0.0", port=settings.port, log_level="info")
     server = uvicorn.Server(config)
 
     def run_server():
