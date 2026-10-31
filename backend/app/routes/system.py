@@ -11,7 +11,10 @@ router = APIRouter(prefix="/api", tags=["system"])
 
 @router.get("/system")
 async def system_info(request: Request):
-    settings = request.app.state.settings
+    settings = getattr(request.app.state, "settings", None)
+    if settings is None:
+        from app.config import load_settings
+        settings = load_settings()
     manager = getattr(request.app.state, "job_manager", None)
     gpu = "unknown"
     try:

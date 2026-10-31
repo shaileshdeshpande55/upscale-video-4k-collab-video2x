@@ -31,6 +31,8 @@ def create_app(settings: Settings | None = None, job_manager_factory: Callable |
             app.state.job_manager.shutdown()
 
     app = FastAPI(title="Video2X Colab Backend", lifespan=lifespan)
+    app.state.settings = settings
+    app.state.job_manager = None
 
     origins = settings.cors_origins or ["*"]
     app.add_middleware(
